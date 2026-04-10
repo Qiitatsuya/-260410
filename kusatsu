@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="googlebot" content="noindex, nofollow">
+<title>浜松町→草津温泉 男旅メシMAP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#1a1714;--card:#252220;--card-hover:#2e2b28;
+--accent:#e86a2a;--accent2:#f5a623;--text:#e8e0d6;--text-dim:#9a938b;
+--sa:#4a90d9;--road:#2ecc71;--kusatsu:#e8453c;
+}
+body{
+font-family:'Zen Kaku Gothic New',sans-serif;
+background:var(--bg);color:var(--text);
+min-height:100vh;overflow-x:hidden;
+}
+body::before{
+content:'';position:fixed;inset:0;z-index:0;
+background:radial-gradient(ellipse at 20% 0%,rgba(232,106,42,.08) 0%,transparent 60%),
+radial-gradient(ellipse at 80% 100%,rgba(232,69,60,.06) 0%,transparent 50%);
+pointer-events:none;
+}
+
+.hero{
+position:relative;z-index:1;
+padding:3rem 1.5rem 2rem;text-align:center;
+border-bottom:1px solid rgba(232,106,42,.2);
+}
+.hero-label{
+display:inline-block;
+font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;
+color:var(–accent);
+border:1px solid var(–accent);
+padding:.3rem .8rem;border-radius:2px;
+margin-bottom:1rem;
+opacity:0;animation:fadeUp .6s .2s forwards;
+}
+.hero h1{
+font-family:‘Shippori Mincho’,serif;font-weight:800;
+font-size:clamp(1.6rem,5vw,2.4rem);
+line-height:1.3;
+background:linear-gradient(135deg,var(–text),var(–accent2));
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+opacity:0;animation:fadeUp .6s .4s forwards;
+}
+.hero p{
+margin-top:.6rem;color:var(–text-dim);font-size:.85rem;
+opacity:0;animation:fadeUp .6s .6s forwards;
+}
+.hero .noindex-badge{
+display:inline-flex;align-items:center;gap:.3rem;
+margin-top:.8rem;
+font-size:.65rem;color:var(–text-dim);
+background:rgba(255,255,255,.05);
+padding:.25rem .6rem;border-radius:20px;
+opacity:0;animation:fadeUp .6s .8s forwards;
+}
+.hero .noindex-badge::before{
+content:‘🔒’;font-size:.7rem;
+}
+
+#map{
+position:relative;z-index:1;
+width:100%;height:50vh;min-height:300px;
+border-bottom:2px solid var(–accent);
+}
+
+.section-header{
+position:relative;z-index:1;
+padding:2rem 1.5rem .8rem;
+display:flex;align-items:center;gap:.8rem;
+}
+.section-icon{
+width:2.2rem;height:2.2rem;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-size:1rem;font-weight:900;color:#fff;flex-shrink:0;
+}
+.section-icon.sa{background:var(–sa)}
+.section-icon.road{background:var(–road)}
+.section-icon.kusatsu{background:var(–kusatsu)}
+.section-title{
+font-family:‘Shippori Mincho’,serif;
+font-size:1.15rem;font-weight:800;
+}
+.section-sub{
+font-size:.72rem;color:var(–text-dim);margin-top:.1rem;
+}
+
+.cards{
+position:relative;z-index:1;
+padding:0 1rem 1rem;
+display:flex;flex-direction:column;gap:.7rem;
+}
+.card{
+background:var(–card);border-radius:10px;
+padding:1rem 1.1rem;
+border:1px solid rgba(255,255,255,.04);
+transition:all .25s;
+cursor:pointer;
+opacity:0;animation:fadeUp .5s forwards;
+}
+.card:hover{background:var(–card-hover);transform:translateY(-2px);border-color:rgba(232,106,42,.2)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.card-name{
+font-weight:900;font-size:.95rem;line-height:1.35;
+}
+.card-tag{
+flex-shrink:0;
+font-size:.6rem;font-weight:700;
+padding:.2rem .45rem;border-radius:3px;
+white-space:nowrap;
+}
+.card-tag.sa{background:rgba(74,144,217,.15);color:var(–sa)}
+.card-tag.road{background:rgba(46,204,113,.15);color:var(–road)}
+.card-tag.kusatsu{background:rgba(232,69,60,.15);color:var(–kusatsu)}
+.card-memo{
+margin-top:.45rem;
+font-size:.78rem;line-height:1.55;color:var(–text-dim);
+}
+.card-meta{
+margin-top:.5rem;
+display:flex;flex-wrap:wrap;gap:.4rem;
+}
+.card-meta span{
+font-size:.62rem;
+padding:.15rem .4rem;border-radius:3px;
+background:rgba(255,255,255,.05);color:var(–text-dim);
+}
+.card-meta .closed{background:rgba(232,69,60,.12);color:#e8685e}
+.card-link{
+display:inline-flex;align-items:center;gap:.2rem;
+margin-top:.5rem;
+font-size:.7rem;color:var(–accent);text-decoration:none;
+font-weight:700;
+}
+.card-link:hover{color:var(–accent2)}
+
+.footer{
+position:relative;z-index:1;
+text-align:center;
+padding:2rem 1.5rem 3rem;
+border-top:1px solid rgba(255,255,255,.05);
+margin-top:1rem;
+}
+.footer p{font-size:.7rem;color:var(–text-dim);line-height:1.7}
+
+@keyframes fadeUp{
+from{opacity:0;transform:translateY(12px)}
+to{opacity:1;transform:translateY(0)}
+}
+
+.leaflet-popup-content-wrapper{
+background:var(–card)!important;color:var(–text)!important;
+border-radius:8px!important;border:1px solid rgba(232,106,42,.3)!important;
+box-shadow:0 8px 30px rgba(0,0,0,.5)!important;
+}
+.leaflet-popup-tip{background:var(–card)!important}
+.leaflet-popup-content{font-family:‘Zen Kaku Gothic New’,sans-serif!important;font-size:.8rem!important;line-height:1.5!important}
+.leaflet-popup-content strong{color:var(–accent);font-size:.85rem}
+.popup-memo{color:var(–text-dim);margin-top:.3rem;font-size:.72rem}
+
+.leaflet-control-zoom a{
+background:var(–card)!important;color:var(–text)!important;
+border-color:rgba(255,255,255,.1)!important;
+}
+.leaflet-control-attribution{display:none!important}
+</style>
+
+</head>
+<body>
+
+<div class="hero">
+<div class="hero-label">🚗 レンタカー男旅</div>
+<h1>浜松町 → 草津温泉<br>男旅メシMAP</h1>
+<p>関越道〜渋川IC〜草津温泉ルート沿い 厳選15スポット</p>
+<div class="noindex-badge">このページはURLを知っている人だけ閲覧可</div>
+</div>
+
+<div id="map"></div>
+
+<!-- SA/PA -->
+
+<div class="section-header">
+<div class="section-icon sa">SA</div>
+<div>
+<div class="section-title">高速SA・PAのガッツリ飯</div>
+<div class="section-sub">関越道を北上しながら寄れる</div>
+</div>
+</div>
+<div class="cards" id="cards-sa"></div>
+
+<!-- 道中 -->
+
+<div class="section-header">
+<div class="section-icon road">道</div>
+<div>
+<div class="section-title">IC降りてからの道中メシ</div>
+<div class="section-sub">渋川〜伊香保エリアの名物</div>
+</div>
+</div>
+<div class="cards" id="cards-road"></div>
+
+<!-- 草津 -->
+
+<div class="section-header">
+<div class="section-icon kusatsu">草</div>
+<div>
+<div class="section-title">草津温泉の男メシスポット</div>
+<div class="section-sub">湯畑周辺〜徒歩圏内</div>
+</div>
+</div>
+<div class="cards" id="cards-kusatsu"></div>
+
+<div class="footer">
+<p>⚠️ 営業時間・定休日は変更の可能性があります。<br>行く前に各店舗へ確認を推奨します。</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<script>
+const spots = [
+  {cat:"sa",name:"三芳PA（下り）",lat:35.8414,lng:139.5026,memo:"川越焼きそば（極太もちもち麺）が男メシに最高",tags:["24h"],addr:"埼玉県入間郡三芳町"},
+  {cat:"sa",name:"高坂SA（下り）",lat:35.9867,lng:139.3845,memo:"東松山名物の味噌かつ丼。辛味噌×トンカツで白飯が止まらない",tags:["24h"],addr:"埼玉県東松山市"},
+  {cat:"sa",name:"上里SA（下り）",lat:36.2542,lng:139.1192,memo:"姫豚丼（1,280円）と上里醤油ラーメン（930円）。藤岡JCT手前ラストの大型SA",tags:["24h"],addr:"埼玉県児玉郡上里町"},
+  {cat:"sa",name:"赤城高原SA（下り）",lat:36.6024,lng:139.0613,memo:"地元野菜たっぷり御膳。眺望抜群でリフレッシュに最適",tags:["24h"],addr:"群馬県利根郡昭和村"},
+  {cat:"road",name:"永井食堂",lat:36.5652,lng:139.0374,memo:"もつ煮の聖地。定食790円で山盛りもつ煮＋味噌汁＋ライス。口コミ6,000超。持ち帰り1袋1,000円も買うべし",tags:["日曜定休","9:00-17:30"],addr:"群馬県渋川市上白井"},
+  {cat:"road",name:"元祖 田丸屋（水沢うどん）",lat:36.4795,lng:138.9470,memo:"日本三大うどんの元祖。胡麻つゆ×醤油つゆの2種で食べる。舞茸天ぷら必須",tags:["水曜定休","9:00-15:00"],addr:"群馬県渋川市伊香保町水沢"},
+  {cat:"kusatsu",name:"草津湯畑 まんてん",lat:36.6227,lng:138.5969,memo:"湯畑目の前。鶏舞茸・カニいくら等の釜めし。ハイボール片手に最高。予約推奨",tags:["水曜定休","11:00-14:30 / 17:00-21:30"],addr:"草津町草津116-2 2F"},
+  {cat:"kusatsu",name:"石臼挽蕎麦 三國家",lat:36.6237,lng:138.5955,memo:"草津1・2を争う人気蕎麦。石臼挽き手打ち。鴨カレーも旨い。行列覚悟だが並ぶ価値あり",tags:["火曜定休","11:00-14:45 / 17:30-19:30"],addr:"草津町草津386 2F"},
+  {cat:"kusatsu",name:"やすらぎ亭",lat:36.6237,lng:138.5951,memo:"手打ち九割蕎麦。十割・九割・八割の食べ比べセットあり。目の前で打つ姿が見れる。舞茸天ぷら絶品",tags:["10:30-19:30"],addr:"草津町草津389"},
+  {cat:"kusatsu",name:"いいやま亭",lat:36.6238,lng:138.5950,memo:"草津唯一の釜飯専門店。えびいくら・親子等。注文後に炊くので20分待つが蓋開けた瞬間の香りで勝ち確",tags:["不定休"],addr:"草津町草津386-2"},
+  {cat:"kusatsu",name:"洋食どんぐり",lat:36.6250,lng:138.5998,memo:"隠れ家風洋食屋。デミグラスハンバーグが絶品。カツカレーもボリューム満点。ディナー要予約",tags:["水曜定休","11:30-14:30"],addr:"草津町草津562-16"},
+  {cat:"kusatsu",name:"ZEN 繕",lat:36.6225,lng:138.5966,memo:"A4-A5国産和牛すき焼き・ステーキ。老舗精肉店が選んだ肉を夜にがっつり。群馬地酒・クラフトビールも充実",tags:["無休","11:30-14:00 / 17:00-21:00"],addr:"草津町草津108"},
+  {cat:"kusatsu",name:"やきとり静",lat:36.6233,lng:138.5968,memo:"湯畑前の行列焼き鳥。注文後に目の前で焼いてくれる。ビール片手に湯畑前で立ち食い",tags:["水曜定休","18:30-20:00"],addr:"草津町草津396"},
+  {cat:"kusatsu",name:"らーめん屋青葉",lat:36.6238,lng:138.5943,memo:"温泉後のシメラーメンに最高。焼きチャーシュー丼（350円）もつけろ。卵に焼印を押す遊び心◎",tags:[],addr:"草津町草津497-1"},
+  {cat:"kusatsu",name:"みやたや食堂",lat:36.6222,lng:138.6037,memo:"Google評価4.5の穴場定食屋。夫婦二人で切り盛り。生姜焼きとトンカツがガチ旨。知る人ぞ知る名店",tags:["木曜定休","11:30-14:00 / 17:00-18:30"],addr:"草津町草津283-1"},
+];
+
+// Map
+const map = L.map('map',{scrollWheelZoom:false}).setView([36.25,138.85],8);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  maxZoom:18
+}).addTo(map);
+
+const colors = {sa:'#4a90d9',road:'#2ecc71',kusatsu:'#e8453c'};
+const icons = {};
+Object.keys(colors).forEach(k=>{
+  icons[k] = L.divIcon({
+    className:'',
+    html:`<div style="width:14px;height:14px;border-radius:50%;background:${colors[k]};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>`,
+    iconSize:[14,14],iconAnchor:[7,7]
+  });
+});
+
+spots.forEach(s=>{
+  const m = L.marker([s.lat,s.lng],{icon:icons[s.cat]}).addTo(map);
+  m.bindPopup(`<strong>${s.name}</strong><div class="popup-memo">${s.memo}</div>`);
+});
+
+// Fit bounds
+const group = L.featureGroup(spots.map(s=>L.marker([s.lat,s.lng])));
+map.fitBounds(group.getBounds().pad(0.1));
+
+// Cards
+function renderCards(cat,containerId){
+  const container = document.getElementById(containerId);
+  const filtered = spots.filter(s=>s.cat===cat);
+  filtered.forEach((s,i)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = (i*0.08)+'s';
+    const tagsHtml = s.tags.map(t=>{
+      const cls = t.includes('定休')?'closed':'';
+      return `<span class="${cls}">${t}</span>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-name">${s.name}</div>
+        <div class="card-tag ${s.cat}">${cat==='sa'?'SA/PA':cat==='road'?'道中':'草津'}</div>
+      </div>
+      <div class="card-memo">${s.memo}</div>
+      <div class="card-meta">${tagsHtml}</div>
+      <a class="card-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name+' '+s.addr)}" target="_blank" rel="noopener">📍 Google Mapで開く →</a>
+    `;
+    card.addEventListener('click',()=>{
+      map.setView([s.lat,s.lng],15);
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+    container.appendChild(card);
+  });
+}
+renderCards('sa','cards-sa');
+renderCards('road','cards-road');
+renderCards('kusatsu','cards-kusatsu');
+
+// Intersection Observer for card animation
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting) e.target.style.animationPlayState='running';
+  });
+},{threshold:0.1});
+document.querySelectorAll('.card').forEach(c=>{
+  c.style.animationPlayState='paused';
+  observer.observe(c);
+});
+</script>
+
+</body>
+</html>
